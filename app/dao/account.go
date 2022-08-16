@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"yatter-backend-go/app/domain/object"
 	"yatter-backend-go/app/domain/repository"
 
@@ -36,4 +37,44 @@ func (r *account) FindByUsername(ctx context.Context, username string) (*object.
 	}
 
 	return entity, nil
+}
+
+// NewAccount : Create account repository
+func (r *account) Insert(ctx context.Context, account *object.Account) (object.AccountID, error) {
+	result, err := r.db.ExecContext(ctx, `
+		INSERT INTO
+			account (
+				username,
+				password_hash,
+				display_name,
+				avatar,
+				header,
+				note
+			) VALUES (
+				?,
+				?,
+				?,
+				?,
+				?,
+				?
+			)
+		`,
+		account.Username,
+		account.PasswordHash,
+		account.DisplayName,
+		account.Avatar,
+		account.Header,
+		account.Note,
+	)
+	if err != nil {
+		log.Default().Printf("failed to insert account: %v", err)
+		return 0, fmt.Errorf("%w", err)
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		log.Default().Printf("failed to get last insert id: %v", err)
+		return 0, fmt.Errorf("%w", err)
+	}
+	log.Default().Printf("id: %d", id)
+	return object.AccountID(id), nil
 }
